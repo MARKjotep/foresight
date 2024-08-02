@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "noImplicitAny": true,
+    "allowJs": true,
+    "moduleResolution": "Node",
+    "target": "ESNext",
+    "module": "ESNext",
+    "strict": true,
+    "lib": ["ESNext", "DOM"],
+    "noImplicitThis": false,
+    "outDir": "../app",
+    "composite": true,
+    "jsx": "react",
+    "jsxFactory": "dom",
+    "rootDir": "./",
+    "skipLibCheck": true,
+    "baseUrl": "./",
+    "removeComments": true
+  },
+  "exclude": ["./**/_css", "./_css"]
+}
