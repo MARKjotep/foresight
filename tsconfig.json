@@ -8,7 +8,7 @@
     "strict": true,
     "lib": ["ESNext", "DOM"],
     "noImplicitThis": false,
-    "outDir": "../../dist/foresight",
+    "outDir": "../../dist",
     "composite": true,
     "jsx": "react",
     "jsxFactory": "dom",
