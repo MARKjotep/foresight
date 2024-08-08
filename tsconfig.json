@@ -8,14 +8,13 @@
     "strict": true,
     "lib": ["ESNext", "DOM"],
     "noImplicitThis": false,
-    "outDir": "../app",
+    "outDir": "../../dist/foresight",
     "composite": true,
     "jsx": "react",
     "jsxFactory": "dom",
-    "rootDir": "./",
+    "rootDir": "../",
     "skipLibCheck": true,
-    "baseUrl": "./",
+    "baseUrl": "../",
     "removeComments": true
-  },
-  "exclude": ["./**/_css", "./_css"]
+  }
 }
