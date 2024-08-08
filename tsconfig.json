@@ -8,13 +8,13 @@
     "strict": true,
     "lib": ["ESNext", "DOM"],
     "noImplicitThis": false,
-    "outDir": "../../dist",
+    "outDir": "../../app",
     "composite": true,
     "jsx": "react",
     "jsxFactory": "dom",
-    "rootDir": "../",
+    "rootDir": "./",
     "skipLibCheck": true,
-    "baseUrl": "../",
+    "baseUrl": "./",
     "removeComments": true
   }
 }
