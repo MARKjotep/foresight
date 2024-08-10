@@ -16,5 +16,6 @@
     "skipLibCheck": true,
     "baseUrl": "./",
     "removeComments": true
-  }
+  },
+  "exclude": ["./**/_css", "./_css"]
 }

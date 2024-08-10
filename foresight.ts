@@ -154,6 +154,33 @@ export const { $, _$, $$, $E } = (function () {
     static proper(str: string) {
       return str.charAt(0).toUpperCase() + str.slice(1);
     }
+    static markdown(markdownText: string) {
+      const regex = {
+        header: /^#+\s+(.+)/gm,
+        bold: /\*\*(.*)\*\*/g,
+        italic: /\*(.*)\*/g,
+        link: /\[(.*?)\]\((.*?)\)/g,
+      };
+
+      let html = markdownText;
+
+      // Replace headers
+      html = html.replace(regex.header, (match, content) => {
+        let level = match.match(/^#+/)?.[0].length;
+        return `<h${level}>${content}</h${level}>`;
+      });
+
+      // Replace bold
+      html = html.replace(regex.bold, "<b>$1</b>");
+
+      // Replace italics
+      html = html.replace(regex.italic, "<i>$1</i>");
+
+      // Replace links
+      html = html.replace(regex.link, '<a href="$2">$1</a>');
+
+      return html;
+    }
   }
 
   class $E {
@@ -1034,7 +1061,7 @@ export const { $dom, render, watch, state } = (function () {
     } else if (typeof val == "boolean") {
       return [key, flen ? fatt : null];
     } else {
-      if (val !== null) {
+      if (val !== null || val != undefined) {
         let _val = val;
         // if (key == "href") {
         //   if (val.toString().startsWith("/")) {
@@ -1105,31 +1132,34 @@ export const { $dom, render, watch, state } = (function () {
 
       _m_attr &&
         $$.O.items(_m_attr).forEach(([k, v]) => {
-          if (Array.isArray(v)) {
-            const vv = v.filter((y) => y != "").join(" ");
-            const [it, fat] = VAL(k, vv);
-            fat && $$.O.ass(_fatt, fat);
-            it && _attr.push(it);
-          } else if (typeof v == "object") {
-            if (k == "on") {
-              $$.O.ass(_fatt, { [k]: v });
-            } else {
-              const ooo: dict<XF> = {};
-              const _itms = $$.O.items(v).reduce<string[]>((v, [kk, vv]) => {
-                const [it, fat] = VAL(kk, vv, true, k == "style");
-                fat && $$.O.ass(ooo, fat);
-                it && v.push(it);
-                return v;
-              }, []);
-              _fatt[k] = ooo;
-              const [it, _] = VAL(k, _itms.join(";"));
+          if (k !== "chl")
+            if (Array.isArray(v)) {
+              const vv = v.filter((y) => y != "").join(" ");
+              const [it, fat] = VAL(k, vv);
+              fat && $$.O.ass(_fatt, fat);
               it && _attr.push(it);
+            } else if (typeof v == "object") {
+              if (k == "on") {
+                $$.O.ass(_fatt, { [k]: v });
+              } else {
+                const ooo: dict<XF> = {};
+                const _itms = $$.O.items(v).reduce<string[]>((v, [kk, vv]) => {
+                  const [it, fat] = VAL(kk, vv, true, k == "style");
+                  fat && $$.O.ass(ooo, fat);
+                  it && v.push(it);
+                  return v;
+                }, []);
+                _fatt[k] = ooo;
+                const [it, _] = VAL(k, _itms.join(";"));
+                it && _attr.push(it);
+              }
+            } else {
+              if (v !== undefined) {
+                const [it, fat] = VAL(k, v);
+                fat && $$.O.ass(_fatt, fat);
+                it && _attr.push(it);
+              }
             }
-          } else {
-            const [it, fat] = VAL(k, v);
-            fat && $$.O.ass(_fatt, fat);
-            it && _attr.push(it);
-          }
         });
 
       // CTX
@@ -1233,7 +1263,7 @@ Misc
 -------------------------
 */
 
-export const { loadCSS, For, SFor } = (function () {
+export const { loadCSS, For, SFor, preload } = (function () {
   const rgx = new RegExp(/\/\/(.*?\w.*?$)/);
   function metaURL(meta: string, url: string) {
     let _url = url;
@@ -1266,10 +1296,8 @@ export const { loadCSS, For, SFor } = (function () {
     const existingLinks: any = document.querySelectorAll("head link");
     for (const link of existingLinks) {
       if ("rel" in link) {
-        if (link.rel.indexOf("stylesheet") > -1) {
-          if (link.href.indexOf(href.slice(1)) > -1) {
-            return true;
-          }
+        if (link.href.indexOf(href.slice(1)) > -1) {
+          return true;
         }
       }
     }
@@ -1294,7 +1322,7 @@ export const { loadCSS, For, SFor } = (function () {
   const For = (d: {
     chl?: any;
     each: any[] | object;
-    class?: string;
+    class?: string | string[];
     on?: any;
   }) => {
     const RTS: any[] = [];
@@ -1346,5 +1374,23 @@ export const { loadCSS, For, SFor } = (function () {
     return dom("g", d as any, ...RTS);
   };
 
-  return { loadCSS, For, SFor };
+  function preload(url: string, as: string, type: string) {
+    if (isCSS(url)) return url;
+    const style = document.createElement("link");
+    $(style).attr.set({
+      rel: "preload",
+      type: type,
+      as: as,
+      href: url,
+    });
+
+    if (as == "font") {
+      $(style).attr.set({
+        crossorigin: "anonymous",
+      });
+    }
+    document.head.appendChild(style);
+    return url;
+  }
+  return { loadCSS, For, SFor, preload };
 })();

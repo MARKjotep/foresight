@@ -11,7 +11,9 @@ type events = {
 type HTSFunc<T> = (e: HTMLElement & HTMLCanvasElement) => T;
 type redy = {
   ready?: HTSFunc<void>;
-  resize?: HTSFunc<void>;
+  resize?: (f: HTMLElement, e: Window) => void;
+  unload?: (f: HTMLElement, e: Window) => void;
+  popstate?: (f: HTMLElement, e: Window) => void;
 };
 
 interface dom {
@@ -145,6 +147,13 @@ declare namespace JSX {
     dl: attrD;
     dt: attrD;
     dd: attrD;
+
+    h1: attrD;
+    h2: attrD;
+    h3: attrD;
+    h4: attrD;
+    h5: attrD;
+    h6: attrD;
 
     // SVG Elements  ----------------------------------
     svg: attrD;
