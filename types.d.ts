@@ -217,4 +217,3 @@ declare namespace JSX {
     view: attrD;
   }
 }
-//# sourceMappingURL=intrinsic-elements.d.ts.map

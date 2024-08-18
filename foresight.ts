@@ -821,18 +821,14 @@ export const { $dom, render, watch, state } = (function () {
               } else if (x == "_dom_comp") {
                 if (repDOM) {
                   if (!noFunc && typeof y == "function") {
-                    if (isComp) {
+                    if (isComp && xmid) {
                       const cxt = y(D) as any;
                       const ccx = cxt.__(xmid);
                       const ckey = $$.O.keys(ccx.attr);
-                      if (!(ckey[0] in XATT)) {
-                        dx.inner = ccx.ctx;
-                        if (ckey.length) {
-                          $$.O.ass(XATT, cxt.attr);
-                          xtrig("dom_comp", false, true);
-                        }
-                        // if (dx.inner != cxt.ctx) {
-                        // }
+                      dx.inner = ccx.ctx;
+                      if (ckey.length && !(ckey[0] in XATT)) {
+                        $$.O.ass(XATT, ccx.attr);
+                        xtrig("dom_comp", false, true);
                       }
                     }
                   }
@@ -1304,8 +1300,8 @@ export const { loadCSS, For, SFor, preload } = (function () {
     return false;
   }
 
-  function loadCSS(meta: string, url: string) {
-    let _url = metaURL(meta, url);
+  function loadCSS(importmeta: string, url: string) {
+    let _url = metaURL(importmeta, url);
     if (isCSS(_url)) return;
 
     const style = document.createElement("link");
