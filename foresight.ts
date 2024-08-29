@@ -22,13 +22,15 @@ type CSSinR = {
   [P in keyof CSSStyleDeclaration]?: V | HTSFunc<V>;
 };
 export type attr = dict<V | HTSFunc<attrD>> | attrs2;
+export type dom = InstanceType<typeof $dom>;
+
 /*
 -------------------------
 
 -------------------------
 */
-
-export const { $, _$, $$, $E } = (function () {
+let XATT: dict<dict<XF | dict<XF>>> = {};
+export const { $, _$, $$, $E, eventStream } = (function () {
   type kf = KeyframeAnimationOptions;
   type kfanim = (options?: kf) => anim;
   class $$ {
@@ -48,6 +50,7 @@ export const { $, _$, $$, $E } = (function () {
         ass: Object.assign,
       };
     }
+
     static makeID(length: number) {
       let result = "";
       const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -56,12 +59,14 @@ export const { $, _$, $$, $E } = (function () {
       let counter = 0;
       while (counter < length) {
         let chars = characters + (counter == 0 ? "" : nums);
+
         const charactersLength = chars.length;
         result += chars.charAt(Math.floor(Math.random() * charactersLength));
         counter += 1;
       }
       return result;
     }
+
     static Y(e: _dom, cname: fun<string, any>): string {
       function Z() {}
       Z.prototype.e = e;
@@ -181,6 +186,9 @@ export const { $, _$, $$, $E } = (function () {
 
       return html;
     }
+    static strDateToLocale(strd: string) {
+      return new Date(parseInt(strd)).toLocaleString();
+    }
   }
 
   class $E {
@@ -256,17 +264,24 @@ export const { $, _$, $$, $E } = (function () {
     set append(val: any) {
       //
       if (val instanceof $dom) {
-        const dval = val.__(xmid).ctx;
-        this.e.insertAdjacentHTML("beforeend", dval);
+        const dval = val.__(xmid);
+        const ckey = $$.O.keys(dval.attr);
+        if (ckey.length && !(ckey[0] in XATT)) {
+          $$.O.ass(XATT, dval.attr);
+        }
+        this.e.insertAdjacentHTML("beforeend", dval.ctx);
       } else {
         this.e.insertAdjacentHTML("beforeend", val);
       }
     }
     set appendfirst(val: any) {
-      //
       if (val instanceof $dom) {
-        const dval = val.__(xmid).ctx;
-        this.e.insertAdjacentHTML("afterbegin", dval);
+        const dval = val.__(xmid);
+        const ckey = $$.O.keys(dval.attr);
+        if (ckey.length && !(ckey[0] in XATT)) {
+          $$.O.ass(XATT, dval.attr);
+        }
+        this.e.insertAdjacentHTML("afterbegin", dval.ctx);
       } else {
         this.e.insertAdjacentHTML("afterbegin", val);
       }
@@ -276,6 +291,10 @@ export const { $, _$, $$, $E } = (function () {
     }
     get click() {
       this.e.click();
+      return this;
+    }
+    get focus() {
+      this.e.focus();
       return this;
     }
     get rect() {
@@ -324,7 +343,17 @@ export const { $, _$, $$, $E } = (function () {
       return this.e.id;
     }
     set inner(val: any) {
-      this.e.innerHTML = val;
+      if (val instanceof $dom) {
+        const dval = val.__(xmid);
+        const ckey = $$.O.keys(dval.attr);
+        if (ckey.length && !(ckey[0] in XATT)) {
+          $$.O.ass(XATT, dval.attr);
+        }
+
+        this.e.innerHTML = dval.ctx;
+      } else {
+        this.e.innerHTML = val;
+      }
     }
     get inner(): string {
       return this.e.innerHTML;
@@ -351,6 +380,21 @@ export const { $, _$, $$, $E } = (function () {
     }
     get tag() {
       return this.e.tagName;
+    }
+
+    get value() {
+      let tval = this.e as any;
+      return tval.value ?? "";
+    }
+    set value(vl: any) {
+      let tval = this.e as any;
+      tval.value = vl;
+    }
+    set disabled(vl: boolean) {
+      let tval = this.e as any;
+      if ("disabled" in tval) {
+        tval.disabled = vl;
+      }
     }
   }
 
@@ -394,14 +438,6 @@ export const { $, _$, $$, $E } = (function () {
     }
     // ------
 
-    disabled(stat: boolean) {
-      if (stat) {
-        this.e.setAttribute("disabled", "disabled");
-      } else {
-        this.e.removeAttribute("disabled");
-      }
-      return this;
-    }
     has(e: any | null) {
       return this.e.contains(e);
     }
@@ -659,7 +695,47 @@ export const { $, _$, $$, $E } = (function () {
     return new anim(e);
   }
 
-  return { $, _$, $$, $E };
+  const eventSources: dict<EventSource> = {};
+  const eventListener: dict<dict<((a: MessageEvent) => void)[]>> = {};
+  class eStream {
+    stream: EventSource;
+    url: string;
+    constructor(eurl: string, withCredentials: boolean) {
+      this.url = eurl;
+      if (eurl in eventSources) {
+        this.stream = eventSources[eurl];
+      } else {
+        this.stream = new EventSource(eurl, {
+          withCredentials: withCredentials,
+        });
+        eventSources[eurl] = this.stream;
+        eventListener[this.url] = {};
+      }
+    }
+    on(event: dict<(a: MessageEvent) => void>) {
+      const strm = this.stream;
+      $$.O.items(event).forEach(([kk, vv]) => {
+        if (kk in eventListener[this.url]) {
+          eventListener[this.url][kk].forEach((lt) => {
+            this.stream.removeEventListener(kk, lt);
+          });
+          eventListener[this.url][kk] = [];
+        }
+        // Then
+        strm.addEventListener(kk, vv);
+        if (!(kk in eventListener[this.url])) {
+          eventListener[this.url][kk] = [];
+        }
+        eventListener[this.url][kk].push(vv);
+      });
+      return this;
+    }
+  }
+  function eventStream(url: string, withCredentials = true) {
+    return new eStream(url, withCredentials);
+  }
+
+  return { $, _$, $$, $E, eventStream };
 })();
 
 /*
@@ -774,7 +850,6 @@ export const { local, session } = (function () {
 let xmid: any | null = null;
 export const { $dom, render, watch, state } = (function () {
   const WT: HTMLElement[] = [];
-  let XATT: dict<dict<XF | dict<XF>>> = {};
   const resizeF: dict<(e?: HTMLElement) => void> = {};
   const unloadF: dict<(e?: HTMLElement) => void> = {};
   const popstateF: dict<(e?: HTMLElement) => void> = {};
@@ -897,7 +972,6 @@ export const { $dom, render, watch, state } = (function () {
       });
     });
     //   ------
-
     window.addEventListener("beforeunload", function (e: BeforeUnloadEvent) {
       const targ = e.target;
       $$.O.items(unloadF).forEach(([k, v]) => {
@@ -944,13 +1018,17 @@ export const { $dom, render, watch, state } = (function () {
     callback: (...e: T[]) => any,
     ...valsToWatch: Array<fun<any, any>>
   ) {
-    let CB: [fun<any, void>, any[]] = [callback, remap(valsToWatch)];
     let XF = $$.new({ dom: "span" });
+    //
+    let CB: [fun<any, void>, any[]] = [callback, remap(valsToWatch)];
     XF.onclick = function (e) {
       const [cb, oldArr] = CB;
+
       if (valsToWatch.length) {
         let oldn = remap(valsToWatch);
-        let hasChanged = oldn.some((dx, i) => !(dx == oldArr[i]));
+        let hasChanged = oldn.some((dx, i) => {
+          return !(dx == oldArr[i]);
+        });
         if (hasChanged) {
           cb(...oldn);
           CB = [cb, oldn];
@@ -982,8 +1060,10 @@ export const { $dom, render, watch, state } = (function () {
         ee = newValue;
         xtrig("state_comp", true, false, component);
       } else {
-        if (typeof newValue == "object") $$.O.ass(ee as any, newValue);
-        else ee = newValue;
+        if (typeof newValue == "object") {
+          // $$.O.ass(ee as any, newValue);
+          ee = newValue;
+        } else ee = newValue;
         xtrig("state");
       }
       return;
@@ -1083,7 +1163,7 @@ export const { $dom, render, watch, state } = (function () {
       this.app = app;
     }
     dom(data = {}) {
-      `<noscript>You need to enable JavaScript to run this app.</noscript>`;
+      let noscrp = `<noscript>You need to enable JavaScript to run this app.</noscript>`;
       const _XRT = _$("body");
       if (_XRT) {
         xmid = new idm(_XRT.id);
@@ -1091,11 +1171,9 @@ export const { $dom, render, watch, state } = (function () {
         const XDM = Array.isArray(TA) ? TA : [TA];
         //
         XDM.reverse().forEach((ts) => {
-          const _ts = ts.__(xmid);
-          $$.O.ass(XATT, _ts.attr);
-          _XRT.appendfirst = _ts.ctx;
+          _XRT.appendfirst = ts;
         });
-
+        _XRT.appendfirst = noscrp;
         xtrig("render");
         windowState();
       }
@@ -1239,11 +1317,7 @@ export const { $dom, render, watch, state } = (function () {
   return { $dom, render, watch, state };
 })();
 
-export function dom(
-  name: string | DomFn,
-  attr: any,
-  ...ctx: any
-): InstanceType<typeof $dom> {
+export function dom(name: string | DomFn, attr: any, ...ctx: any): dom {
   const chl = (attr && attr.chl) || ctx;
 
   if (typeof name == "function") {
@@ -1258,8 +1332,14 @@ export function dom(
 Misc
 -------------------------
 */
+interface pages {
+  app: string;
+  css: string;
+  title: string;
+  scrollY?: number;
+}
 
-export const { loadCSS, For, SFor, preload } = (function () {
+export const { loadCSS, For, SFor, preload, Importer } = (function () {
   const rgx = new RegExp(/\/\/(.*?\w.*?$)/);
   function metaURL(meta: string, url: string) {
     let _url = url;
@@ -1388,5 +1468,23 @@ export const { loadCSS, For, SFor, preload } = (function () {
     document.head.appendChild(style);
     return url;
   }
-  return { loadCSS, For, SFor, preload };
+
+  function Importer(
+    npath: pages,
+    pageFN: (dm: ReturnType<typeof dom>) => void,
+  ) {
+    document.title = npath.title;
+    loadCSS(import.meta.url, npath.css);
+    import(npath.app).then((e) => {
+      if ("MAIN" in e) {
+        pageFN(dom(e.MAIN, null));
+        const nsc = npath.scrollY;
+        window.scrollTo({ top: nsc ?? 0, behavior: "instant" });
+      } else {
+        pageFN(dom("div", null, "404? MAIN not found."));
+      }
+    });
+  }
+
+  return { loadCSS, For, SFor, preload, Importer };
 })();

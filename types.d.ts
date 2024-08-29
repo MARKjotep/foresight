@@ -16,10 +16,10 @@ type redy = {
   popstate?: (f: HTMLElement, e: Window) => void;
 };
 
-interface dom {
-  ctx: string;
-  _fatt: dict<any>;
-}
+// interface dom {
+//   ctx: string;
+//   _fatt: dict<any>;
+// }
 
 type CSSinR = {
   [P in keyof CSSStyleDeclaration]?: V | HTSFunc<V>;
