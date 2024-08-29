@@ -1319,7 +1319,9 @@ export const { $dom, render, watch, state } = (function () {
 
 export function dom(name: string | DomFn, attr: any, ...ctx: any): dom {
   const chl = (attr && attr.chl) || ctx;
-
+  if (attr && "chl" in attr) {
+    delete attr.chl;
+  }
   if (typeof name == "function") {
     return name(chl ? { chl, ...attr } : chl, ctx);
   } else {
