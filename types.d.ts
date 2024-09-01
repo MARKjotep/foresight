@@ -4,9 +4,10 @@ interface dict<T> {
   [Key: string]: T;
 }
 type funOrStr = fun<null, string> | string | string[];
-type eventFunction = (e: Event | any) => void;
+
+type eventFunction = (e?: any) => void;
 type events = {
-  [P in keyof HTMLElementEventMap]?: eventFunction;
+  [P in keyof GlobalEventHandlersEventMap]?: eventFunction;
 };
 type HTSFunc<T> = (e: HTMLElement & HTMLCanvasElement) => T;
 type redy = {
@@ -15,11 +16,6 @@ type redy = {
   unload?: (f: HTMLElement, e: Window) => void;
   popstate?: (f: HTMLElement, e: Window) => void;
 };
-
-// interface dom {
-//   ctx: string;
-//   _fatt: dict<any>;
-// }
 
 type CSSinR = {
   [P in keyof CSSStyleDeclaration]?: V | HTSFunc<V>;
@@ -35,7 +31,7 @@ interface attrs2 {
 type attrD = dict<V | HTSFunc<attrD>> | attrs2;
 
 declare namespace JSX {
-  type Element = $dom;
+  type Element = dom;
   interface IntrinsicElements {
     // Basic ----------------------------------
     p: attrD;

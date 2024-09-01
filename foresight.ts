@@ -8,16 +8,14 @@ Types
 export interface dict<T> {
   [Key: string]: T;
 }
-interface DomFn {
-  (attributes?: any, contents?: any[]): InstanceType<typeof $dom>;
-}
+
 type HTSFunc<T> = (e: HTMLElement) => T;
 type fun<E, T> = (e?: E) => T;
 type V = string | number | boolean;
 type XF = fun<any, V>;
 type XD = dict<XF | V>;
-export type $RT = ReturnType<typeof $>;
-export type _$RT = ReturnType<typeof _$>;
+export type $ = ReturnType<typeof $>;
+export type _$ = ReturnType<typeof _$>;
 type CSSinR = {
   [P in keyof CSSStyleDeclaration]?: V | HTSFunc<V>;
 };
@@ -150,10 +148,10 @@ export const { $, _$, $$, $E, eventStream } = (function () {
     static get isDark() {
       return window.matchMedia("(prefers-color-scheme: dark)").matches;
     }
-    static computedBG(e: _$RT) {
+    static computedBG(e: _$) {
       return window.getComputedStyle(e!.e).backgroundColor;
     }
-    static computed(e: _$RT) {
+    static computed(e: _$) {
       return window.getComputedStyle(e!.e);
     }
     static proper(str: string) {
@@ -208,7 +206,6 @@ export const { $, _$, $$, $E, eventStream } = (function () {
         return e.x;
       } else 0;
     }
-
     static client_width(e: HTMLElement) {
       const { clientWidth, offsetLeft, parentElement: p_el } = e;
       if (p_el) {
@@ -235,7 +232,7 @@ export const { $, _$, $$, $E, eventStream } = (function () {
     get a() {
       return a(this.e);
     }
-    get all(): $RT[] {
+    get all(): _dom[] {
       if (this.query_string) {
         const QD = document.querySelectorAll(this.query_string);
         if (QD.length) {
@@ -349,7 +346,6 @@ export const { $, _$, $$, $E, eventStream } = (function () {
         if (ckey.length && !(ckey[0] in XATT)) {
           $$.O.ass(XATT, dval.attr);
         }
-
         this.e.innerHTML = dval.ctx;
       } else {
         this.e.innerHTML = val;
@@ -365,7 +361,6 @@ export const { $, _$, $$, $E, eventStream } = (function () {
       }
       return null;
     }
-
     get offsetParent(): _dom | null {
       let prtn = this.e.offsetParent;
       if (prtn) {
@@ -373,7 +368,6 @@ export const { $, _$, $$, $E, eventStream } = (function () {
       }
       return null;
     }
-
     get remove_element() {
       this.e.remove();
       return this;
@@ -395,6 +389,20 @@ export const { $, _$, $$, $E, eventStream } = (function () {
       if ("disabled" in tval) {
         tval.disabled = vl;
       }
+    }
+    get disabled() {
+      let tval = this.e as any;
+      if ("disabled" in tval) {
+        return tval.disabled;
+      }
+      return false;
+    }
+    get submit() {
+      let tval = this.e as any;
+      if ("submit" in tval) {
+        return tval.submit();
+      }
+      return false;
     }
   }
 
@@ -514,7 +522,7 @@ export const { $, _$, $$, $E, eventStream } = (function () {
       this.e.removeEventListener(event, handler, useCapture);
       return this;
     }
-    timed(fn: (ee?: $RT) => void, timeout = 250) {
+    timed(fn: (ee?: _dom) => void, timeout = 250) {
       setTimeout(() => fn(this), timeout);
       return this;
     }
@@ -850,6 +858,7 @@ export const { local, session } = (function () {
 let xmid: any | null = null;
 export const { $dom, render, watch, state } = (function () {
   const WT: HTMLElement[] = [];
+  const _DC = document;
   const resizeF: dict<(e?: HTMLElement) => void> = {};
   const unloadF: dict<(e?: HTMLElement) => void> = {};
   const popstateF: dict<(e?: HTMLElement) => void> = {};
@@ -861,8 +870,6 @@ export const { $dom, render, watch, state } = (function () {
     noFunc = false,
     isComp = false,
   ) => {
-    const _DC = document;
-
     if (XATT)
       $$.O.items(XATT).forEach(([k, v]) => {
         if ($$.O.keys(v).length == 0) {
@@ -875,14 +882,21 @@ export const { $dom, render, watch, state } = (function () {
               if (x == "ctx") {
                 if (typeof y == "function") {
                   const cxt = y(D) as any;
-                  if (dx.inner != cxt) {
-                    dx.inner = cxt;
+                  if (Array.isArray(cxt)) {
+                    const cj = cxt.join("");
+                    if (dx.inner != cj) {
+                      dx.inner = cj;
+                    }
+                  } else {
+                    if (dx.inner != cxt) {
+                      dx.inner = cxt;
+                    }
                   }
                 }
               } else if (x == "_dom") {
-                if (repDOM) {
-                  if (!noFunc && typeof y == "function") {
-                    if (!isComp && xmid) {
+                if (typeof y == "function") {
+                  if (repDOM) {
+                    if (!noFunc && !isComp && xmid) {
                       const cxt = y(D) as any;
                       const ccx = cxt.__(xmid);
                       dx.inner = ccx.ctx;
@@ -898,12 +912,20 @@ export const { $dom, render, watch, state } = (function () {
                   if (!noFunc && typeof y == "function") {
                     if (isComp && xmid) {
                       const cxt = y(D) as any;
-                      const ccx = cxt.__(xmid);
-                      const ckey = $$.O.keys(ccx.attr);
-                      dx.inner = ccx.ctx;
-                      if (ckey.length && !(ckey[0] in XATT)) {
-                        $$.O.ass(XATT, ccx.attr);
-                        xtrig("dom_comp", false, true);
+                      if (Array.isArray(cxt)) {
+                        dx.inner = "";
+                        cxt.forEach((cx) => {
+                          dx.append = cx;
+                          xtrig("dom_comp", false, true);
+                        });
+                      } else {
+                        const ccx = cxt.__(xmid);
+                        const ckey = $$.O.keys(ccx.attr);
+                        dx.inner = ccx.ctx;
+                        if (ckey.length && !(ckey[0] in XATT)) {
+                          $$.O.ass(XATT, ccx.attr);
+                          xtrig("dom_comp", false, true);
+                        }
                       }
                     }
                   }
@@ -958,7 +980,6 @@ export const { $dom, render, watch, state } = (function () {
   };
 
   function windowState() {
-    const _DC = document;
     window.addEventListener("resize", function (e: UIEvent) {
       const targ = e.target;
       $$.O.items(resizeF).forEach(([k, v]) => {
@@ -1015,7 +1036,7 @@ export const { $dom, render, watch, state } = (function () {
   }
 
   function watch<T>(
-    callback: (...e: T[]) => any,
+    callback: (...e: any[]) => any,
     ...valsToWatch: Array<fun<any, any>>
   ) {
     let XF = $$.new({ dom: "span" });
@@ -1050,22 +1071,37 @@ export const { $dom, render, watch, state } = (function () {
   ): [() => T, (newValue: T) => void] {
     if (val instanceof $dom && component) val.component = true;
     // -----
+
     let ee: T = val;
     const getValue = (): T => ee;
     const setValue = (newValue: T): void => {
       if (ee === newValue) return;
       // ----
-      if (newValue instanceof $dom) {
-        if (component) newValue.component = true;
-        ee = newValue;
-        xtrig("state_comp", true, false, component);
-      } else {
-        if (typeof newValue == "object") {
-          // $$.O.ass(ee as any, newValue);
+      if (Array.isArray(newValue)) {
+        if (newValue[0] instanceof $dom) {
           ee = newValue;
-        } else ee = newValue;
-        xtrig("state");
+          xtrig("state_comp", true, false, true);
+        } else {
+          if (typeof newValue == "object") {
+            // $$.O.ass(ee as any, newValue);
+            ee = newValue;
+          } else ee = newValue;
+          xtrig("state");
+        }
+      } else {
+        if (newValue instanceof $dom) {
+          if (component) newValue.component = true;
+          ee = newValue;
+          xtrig("state_comp", true, false, component);
+        } else {
+          if (typeof newValue == "object") {
+            // $$.O.ass(ee as any, newValue);
+            ee = newValue;
+          } else ee = newValue;
+          xtrig("state");
+        }
       }
+
       return;
     };
     return [getValue, setValue];
@@ -1076,7 +1112,8 @@ export const { $dom, render, watch, state } = (function () {
   
   -------------------------
   */
-  type C = string | fun<any, string | $dom> | $dom;
+  // type C = string | fun<any, string | $dom> | $dom;
+  type C = string | fun<any, V | $dom> | $dom;
   class idm {
     _c = 0;
     id = "";
@@ -1084,18 +1121,15 @@ export const { $dom, render, watch, state } = (function () {
       this._c = 0;
       this.id = mid ? mid : $$.makeID(6);
     }
-    get i() {
-      this._c++;
-      return this;
-    }
     get mid() {
-      return this.id + "_" + this._c;
+      return this.id + "_" + this._c++;
     }
   }
   function reCamel(_case: string) {
     if (_case.startsWith("webkit")) {
       _case = "--" + _case;
     }
+
     return _case.replace(/([a-z])([A-Z])/g, "$1-$2").toLowerCase();
   }
   const vEl = (tag: string) => {
@@ -1139,15 +1173,7 @@ export const { $dom, render, watch, state } = (function () {
     } else {
       if (val !== null || val != undefined) {
         let _val = val;
-        // if (key == "href") {
-        //   if (val.toString().startsWith("/")) {
-        //     if (val == "/") {
-        //       _val = val;
-        //     } else {
-        //       _val = val + ".html";
-        //     }
-        //   }
-        // }
+
         return [
           unQ ? `${isStyle ? reCamel(key) : key}:${_val}` : `${key}="${_val}"`,
           flen ? fatt : null,
@@ -1157,44 +1183,46 @@ export const { $dom, render, watch, state } = (function () {
       }
     }
   }
+
   class render {
     app: (data?: dict<any>) => $dom | $dom[];
     constructor(app: (data?: any) => $dom | $dom[]) {
       this.app = app;
     }
+
     dom(data = {}) {
       let noscrp = `<noscript>You need to enable JavaScript to run this app.</noscript>`;
-      const _XRT = _$("body");
-      if (_XRT) {
-        xmid = new idm(_XRT.id);
-        const TA = this.app(data);
-        const XDM = Array.isArray(TA) ? TA : [TA];
-        //
-        XDM.reverse().forEach((ts) => {
-          _XRT.appendfirst = ts;
-        });
-        _XRT.appendfirst = noscrp;
-        xtrig("render");
-        windowState();
-      }
+      const _XRT = $(document.body);
+      xmid = new idm(_XRT.id);
+      const TA = this.app(data);
+      const XDM = Array.isArray(TA) ? TA : [TA];
+      //
+
+      XDM.reverse().forEach((ts) => {
+        _XRT.appendfirst = ts;
+      });
+      _XRT.appendfirst = noscrp;
+
+      xtrig("render");
+      windowState();
     }
   }
   class $dom {
-    _ctx: any[];
+    _ctx: C[];
     _name: string;
     _attr: dict<V | XF | XD> | null;
     component?: boolean;
     constructor(
       name: string,
       attr: dict<V | XF | XD> | null = null,
-      ctx: C[] = [],
+      ...ctx: C[]
     ) {
       this._ctx = ctx;
       this._name = name;
       this._attr = attr;
       this.component = false;
     }
-    __(cntr: idm) {
+    __(cntr: idm, tstdm: string = "") {
       const f_fatt: dict<dict<dict<XF>>> = {};
       const _attr = [""];
       const _ctx: string[] = [];
@@ -1203,8 +1231,18 @@ export const { $dom, render, watch, state } = (function () {
       const _m_attr = this._attr;
       const _ctx_len = this._ctx.length;
       let xid = "";
-
-      _m_attr &&
+      if (tstdm) {
+        const [tss, dm] = tstdm.split("_");
+        let mdm = parseInt(dm);
+        xid = tss + "_" + ++mdm;
+      } else {
+        xid = cntr.mid;
+      }
+      // ----------------
+      if (_m_attr) {
+        if ("id" in _m_attr) {
+          xid = _m_attr.id as string;
+        }
         $$.O.items(_m_attr).forEach(([k, v]) => {
           if (k !== "chl")
             if (Array.isArray(v)) {
@@ -1236,40 +1274,47 @@ export const { $dom, render, watch, state } = (function () {
             }
         });
 
-      // CTX
-
+        //
+      }
       const CF = (_c: C[]) => {
         _c.forEach((cc) => {
           if (cc instanceof $dom) {
-            const _cc = cc.__(cntr);
+            const _cc = cc.__(cntr, tstdm && xid);
             $$.O.ass(f_fatt, _cc.attr);
             _ctx.push(_cc.ctx);
           } else if (typeof cc == "function") {
             if (_ctx_len > 1) {
-              const dmc = dom("span", {}, cc).__(cntr);
-              $$.O.ass(f_fatt, dmc.attr);
-              _ctx.push(dmc.ctx);
+              CF([dom("span", {}, cc)]);
             } else {
               const ct = cc();
+
               if (ct instanceof $dom) {
                 if (ct.component) {
                   $$.O.ass(_fatt, { _dom_comp: cc });
                 } else {
                   $$.O.ass(_fatt, { _dom: cc });
                 }
-                const _cdm = ct.__(cntr);
-                _ctx.push(_cdm.ctx);
-                $$.O.ass(f_fatt, _cdm.attr);
+                CF([ct]);
               } else if (Array.isArray(ct)) {
+                if (ct[0] instanceof $dom) {
+                  $$.O.ass(_fatt, { _dom_comp: cc });
+                } else {
+                  $$.O.ass(_fatt, { ctx: cc });
+                }
+                CF(ct);
               } else {
-                $$.O.ass(_fatt, { ctx: cc });
-                _ctx.push(ct);
+                if (ct !== undefined) {
+                  $$.O.ass(_fatt, { ctx: cc });
+                  _ctx.push(String(ct));
+                }
               }
             }
           } else {
             if (typeof cc == "object") {
               if (Array.isArray(cc)) {
                 CF(cc);
+              } else {
+                _ctx.push(JSON.stringify(cc));
               }
             } else {
               _ctx.push(cc);
@@ -1279,7 +1324,7 @@ export const { $dom, render, watch, state } = (function () {
       };
 
       CF(this._ctx);
-
+      //
       const fattlen = $$.O.items(_fatt).some(([a, b]) => {
         if (typeof b == "object") {
           return $$.O.vals(b).length;
@@ -1288,13 +1333,7 @@ export const { $dom, render, watch, state } = (function () {
         }
       });
 
-      if (_m_attr && "id" in _m_attr) {
-        xid = _m_attr.id as string;
-      }
-
-      if (!xid && fattlen) {
-        xid = cntr.mid;
-        cntr.i;
+      if (fattlen) {
         const [it, _] = VAL("id", xid);
         _attr.push(it);
       }
@@ -1317,18 +1356,27 @@ export const { $dom, render, watch, state } = (function () {
   return { $dom, render, watch, state };
 })();
 
-export function dom(name: string | DomFn, attr: any, ...ctx: any): dom {
+interface DomFn {
+  (attributes?: any, ...contents: any[]): InstanceType<typeof $dom>;
+}
+type $dd = InstanceType<typeof $dom>;
+type C = string | fun<any, V | $dd> | $dd;
+export function dom(name: string | DomFn, attr: any, ...ctx: C[]): dom {
   const chl = (attr && attr.chl) || ctx;
   if (attr && "chl" in attr) {
     delete attr.chl;
   }
   if (typeof name == "function") {
-    return name(chl ? { chl, ...attr } : chl, ctx);
+    // return name(attr, ctx);
+    return name(chl ? { chl, ...attr } : chl, ...ctx);
   } else {
-    return new $dom(name, attr, ctx);
+    return new $dom(name, attr, ...ctx);
   }
 }
 
+export function frag(d: any, ...x: any) {
+  return x;
+}
 /*
 -------------------------
 Misc
@@ -1341,7 +1389,7 @@ interface pages {
   scrollY?: number;
 }
 
-export const { loadCSS, For, SFor, preload, Importer } = (function () {
+export const { loadCSS, For, preload, Importer } = (function () {
   const rgx = new RegExp(/\/\/(.*?\w.*?$)/);
   function metaURL(meta: string, url: string) {
     let _url = url;
@@ -1397,59 +1445,28 @@ export const { loadCSS, For, SFor, preload, Importer } = (function () {
     document.head.appendChild(style);
   }
 
-  const For = (d: {
-    chl?: any;
-    each: any[] | object;
-    class?: string | string[];
-    on?: any;
-  }) => {
-    const RTS: any[] = [];
-    if (d.chl) {
-      d.chl.forEach((k: any) => {
-        if (typeof k == "function") {
-          if (Array.isArray(d.each)) {
-            RTS.push(...d.each.map(k));
-          } else if (typeof d.each == "object") {
-            RTS.push(...$$.O.keys(d.each).map(k));
-          }
-        } else {
-          RTS.push(k);
-        }
-      });
-    }
-
-    return dom("div", { class: d.class ?? "", on: d.on }, ...RTS);
-  };
-
-  const SFor = (
-    d:
-      | {
-          chl?: any;
-          each?: any[] | object;
-          class?: string;
-          on?: any;
-          style?: CSSinR | any;
-        } & attrD,
+  const For = (
+    d: attrD & {
+      each?: any[] | object;
+    },
+    ...X: dom[]
   ) => {
     const RTS: any[] = [];
-    if (d.chl) {
-      d.chl.forEach((k: any) => {
-        if (typeof k == "function") {
-          if (Array.isArray(d.each)) {
-            RTS.push(...d.each.map(k));
-          } else if (typeof d.each == "object") {
-            RTS.push(...$$.O.keys(d.each).map(k));
-          }
-        } else {
-          RTS.push(k);
-        }
-      });
-    }
-
-    delete d.chl;
+    const de = d.each;
     delete d.each;
+    X.forEach((k: any) => {
+      if (typeof k == "function") {
+        if (Array.isArray(de)) {
+          RTS.push(...de.map(k));
+        } else if (typeof de == "object") {
+          RTS.push(...$$.O.keys(de).map(k));
+        }
+      } else {
+        RTS.push(k);
+      }
+    });
 
-    return dom("g", d as any, ...RTS);
+    return dom("div", { ...d }, ...RTS);
   };
 
   function preload(url: string, as: string, type: string) {
@@ -1488,5 +1505,5 @@ export const { loadCSS, For, SFor, preload, Importer } = (function () {
     });
   }
 
-  return { loadCSS, For, SFor, preload, Importer };
+  return { loadCSS, For, preload, Importer };
 })();
