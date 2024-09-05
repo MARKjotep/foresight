@@ -1,215 +1,230 @@
-type fun<E, T> = (e?: E) => T;
-type V = string | number | boolean | fun<string, any> | dict<fun<any, any>>;
 interface dict<T> {
   [Key: string]: T;
 }
-type funOrStr = fun<null, string> | string | string[];
+type V = string | number | boolean;
+type S = V | V[] | ((e: Element) => S);
 
-type eventFunction = (e?: any) => void;
-type events = {
+type eventFunction = (e: UIEvent & MouseEvent) => void;
+type _events = {
   [P in keyof GlobalEventHandlersEventMap]?: eventFunction;
 };
-type HTSFunc<T> = (e: HTMLElement & HTMLCanvasElement) => T;
-type redy = {
-  ready?: HTSFunc<void>;
-  resize?: (f: HTMLElement, e: Window) => void;
-  unload?: (f: HTMLElement, e: Window) => void;
-  popstate?: (f: HTMLElement, e: Window) => void;
-};
-
-type CSSinR = {
-  [P in keyof CSSStyleDeclaration]?: V | HTSFunc<V>;
-};
-type _events = events & redy;
-interface attrs2 {
-  chl?: any;
-  id?: string;
-  on?: _events;
-  class?: funOrStr;
-  style?: CSSinR | dict<V | HTSFunc<V>>;
+type CE = (f: HTMLElement, e: Window) => void;
+interface c_events {
+  ready?: (f: HTMLElement) => void;
+  resize?: CE;
+  unload?: CE;
+  popstate?: CE;
 }
-type attrD = dict<V | HTSFunc<attrD>> | attrs2;
+
+type STYLE = V | ((e?: Element) => V);
+type CSSinT = {
+  [P in keyof CSSStyleDeclaration]?: STYLE;
+};
+type events = _events & c_events;
+
+//
+
+interface Battr {
+  id?: string;
+  class?: S;
+  style?: CSSinT | dict<STYLE>;
+  on?: events;
+}
+type attr = dict<S> | Battr;
+type MS = dict<(e?: Element) => S>;
+interface dom {
+  component: boolean;
+  __: (e: idm) => { ctx: string; attr: dict<dict<MS> | MS> };
+}
+
+/*
+-------------------------
+DOM content here
+-------------------------
+*/
+type SArr<T> = [T];
 
 declare namespace JSX {
   type Element = dom;
+
   interface IntrinsicElements {
     // Basic ----------------------------------
-    p: attrD;
-    br: attrD;
-    hr: attrD;
-    h: attrD;
-    cmnt: attrD;
-    root: attrD;
+    p: attr;
+    br: attr;
+    hr: attr;
+    h: attr;
+    cmnt: attr;
+    root: attr;
     // Styles and Semantics ----------------------------------
-    html: attrD;
-    body: attrD;
-    div: attrD;
-    span: attrD;
-    header: attrD;
-    hgroup: attrD;
-    footer: attrD;
-    main: attrD;
-    section: attrD;
-    search: attrD;
-    article: attrD;
-    aside: attrD;
-    details: attrD;
-    dialog: attrD;
-    summary: attrD;
-    data: attrD;
+    html: attr;
+    body: attr;
+    div: attr;
+    span: attr;
+    header: attr;
+    hgroup: attr;
+    footer: attr;
+    main: attr;
+    section: attr;
+    search: attr;
+    article: attr;
+    aside: attr;
+    details: attr;
+    dialog: attr;
+    summary: attr;
+    data: attr;
     // Programming ----------------------------------
-    noscript: attrD;
-    object: attrD;
-    param: attrD;
-    script: attrD;
+    noscript: attr;
+    object: attr;
+    param: attr;
+    script: attr;
     // Links ----------------------------------
-    a: attrD;
-    nav: attrD;
-    style: attrD;
+    a: attr;
+    nav: attr;
+    style: attr;
     // Audio / Video ----------------------------------
-    audio: attrD;
-    video: attrD;
-    source: attrD;
-    track: attrD;
+    audio: attr;
+    video: attr;
+    source: attr;
+    track: attr;
     // Images ----------------------------------
-    img: attrD;
-    map: attrD;
-    area: attrD;
-    canvas: attrD;
-    figcaption: attrD;
-    figure: attrD;
-    picture: attrD;
+    img: attr;
+    map: attr;
+    area: attr;
+    canvas: attr;
+    figcaption: attr;
+    figure: attr;
+    picture: attr;
     // IFrame ----------------------------------
-    iframe: attrD;
+    iframe: attr;
     // Forms and Input ----------------------------------
-    form: attrD;
-    input: attrD;
-    textarea: attrD;
-    button: attrD;
-    select: attrD;
-    optgroup: attrD;
-    option: attrD;
-    label: attrD;
-    fieldset: attrD;
-    legend: attrD;
-    datalist: attrD;
+    form: attr;
+    input: attr;
+    textarea: attr;
+    button: attr;
+    select: attr;
+    optgroup: attr;
+    option: attr;
+    label: attr;
+    fieldset: attr;
+    legend: attr;
+    datalist: attr;
     // Tables ----------------------------------
-    table: attrD;
-    caption: attrD;
-    th: attrD;
-    tr: attrD;
-    td: attrD;
-    thead: attrD;
-    tbody: attrD;
-    tfoot: attrD;
-    col: attrD;
-    colgroup: attrD;
+    table: attr;
+    caption: attr;
+    th: attr;
+    tr: attr;
+    td: attr;
+    thead: attr;
+    tbody: attr;
+    tfoot: attr;
+    col: attr;
+    colgroup: attr;
     // Formatting ----------------------------------
 
-    b: attrD;
-    i: attrD;
-    q: attrD;
-    s: attrD;
-    u: attrD;
-    em: attrD;
-    rp: attrD;
-    del: attrD;
-    dfn: attrD;
-    ins: attrD;
-    kbd: attrD;
-    pre: attrD;
-    sub: attrD;
-    sup: attrD;
-    var: attrD;
-    wbr: attrD;
-    cite: attrD;
-    time: attrD;
-    abbr: attrD;
-    code: attrD;
-    mark: attrD;
-    samp: attrD;
-    meter: attrD;
-    small: attrD;
-    strong: attrD;
-    address: attrD;
-    progress: attrD;
-    template: attrD;
-    blockquote: attrD;
+    b: attr;
+    i: attr;
+    q: attr;
+    s: attr;
+    u: attr;
+    em: attr;
+    rp: attr;
+    del: attr;
+    dfn: attr;
+    ins: attr;
+    kbd: attr;
+    pre: attr;
+    sub: attr;
+    sup: attr;
+    var: attr;
+    wbr: attr;
+    cite: attr;
+    time: attr;
+    abbr: attr;
+    code: attr;
+    mark: attr;
+    samp: attr;
+    meter: attr;
+    small: attr;
+    strong: attr;
+    address: attr;
+    progress: attr;
+    template: attr;
+    blockquote: attr;
     // List ----------------------------------
-    menu: attrD;
-    ul: attrD;
-    ol: attrD;
-    li: attrD;
-    dl: attrD;
-    dt: attrD;
-    dd: attrD;
+    menu: attr;
+    ul: attr;
+    ol: attr;
+    li: attr;
+    dl: attr;
+    dt: attr;
+    dd: attr;
 
-    h1: attrD;
-    h2: attrD;
-    h3: attrD;
-    h4: attrD;
-    h5: attrD;
-    h6: attrD;
+    h1: attr;
+    h2: attr;
+    h3: attr;
+    h4: attr;
+    h5: attr;
+    h6: attr;
 
     // SVG Elements  ----------------------------------
-    svg: attrD;
-    path: attrD;
-    circle: attrD;
-    animate: attrD;
-    animateMotion: attrD;
-    animateTransform: attrD;
-    clipPath: attrD;
-    defs: attrD;
-    desc: attrD;
-    ellipse: attrD;
-    feBlend: attrD;
-    feColorMatrix: attrD;
-    feComponentTransfer: attrD;
-    feComposite: attrD;
-    feConvolveMatrix: attrD;
-    feDiffuseLighting: attrD;
-    feDisplacementMap: attrD;
-    feDistantLight: attrD;
-    feDropShadow: attrD;
-    feFlood: attrD;
-    feFuncA: attrD;
-    feFuncB: attrD;
-    feFuncG: attrD;
-    feFuncR: attrD;
-    feGaussianBlur: attrD;
-    feImage: attrD;
-    feMerge: attrD;
-    feMergeNode: attrD;
-    feMorphology: attrD;
-    feOffset: attrD;
-    fePointLight: attrD;
-    feSpecularLighting: attrD;
-    feSpotLight: attrD;
-    feTile: attrD;
-    feTurbulence: attrD;
-    filter: attrD;
-    foreignObject: attrD;
-    g: attrD;
-    image: attrD;
-    line: attrD;
-    linearGradient: attrD;
-    marker: attrD;
-    mask: attrD;
-    metadata: attrD;
-    mpath: attrD;
-    pattern: attrD;
-    polygon: attrD;
-    polyline: attrD;
-    radialGradient: attrD;
-    rect: attrD;
-    set: attrD;
-    stop: attrD;
-    symbol: attrD;
-    text: attrD;
-    textPath: attrD;
-    title: attrD;
-    tspan: attrD;
-    use: attrD;
-    view: attrD;
+    svg: attr;
+    path: attr;
+    circle: attr;
+    animate: attr;
+    animateMotion: attr;
+    animateTransform: attr;
+    clipPath: attr;
+    defs: attr;
+    desc: attr;
+    ellipse: attr;
+    feBlend: attr;
+    feColorMatrix: attr;
+    feComponentTransfer: attr;
+    feComposite: attr;
+    feConvolveMatrix: attr;
+    feDiffuseLighting: attr;
+    feDisplacementMap: attr;
+    feDistantLight: attr;
+    feDropShadow: attr;
+    feFlood: attr;
+    feFuncA: attr;
+    feFuncB: attr;
+    feFuncG: attr;
+    feFuncR: attr;
+    feGaussianBlur: attr;
+    feImage: attr;
+    feMerge: attr;
+    feMergeNode: attr;
+    feMorphology: attr;
+    feOffset: attr;
+    fePointLight: attr;
+    feSpecularLighting: attr;
+    feSpotLight: attr;
+    feTile: attr;
+    feTurbulence: attr;
+    filter: attr;
+    foreignObject: attr;
+    g: attr;
+    image: attr;
+    line: attr;
+    linearGradient: attr;
+    marker: attr;
+    mask: attr;
+    metadata: attr;
+    mpath: attr;
+    pattern: attr;
+    polygon: attr;
+    polyline: attr;
+    radialGradient: attr;
+    rect: attr;
+    set: attr;
+    stop: attr;
+    symbol: attr;
+    text: attr;
+    textPath: attr;
+    title: attr;
+    tspan: attr;
+    use: attr;
+    view: attr;
   }
 }
