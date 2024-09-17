@@ -44,9 +44,10 @@ DOM content here
 */
 type SArr<T> = [T];
 
+interface flex {}
+
 declare namespace JSX {
   type Element = dom;
-
   interface IntrinsicElements {
     // Basic ----------------------------------
     p: attr;

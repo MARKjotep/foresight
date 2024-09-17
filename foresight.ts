@@ -143,11 +143,11 @@ export const { $dom, render, watch, state } = (function () {
           delete XATT[k];
         }
       });
-    }
 
-    WT.forEach((c) => {
-      c.click();
-    });
+      WT.forEach((c) => {
+        c.click();
+      });
+    }
   }
   function windowState() {
     window.addEventListener("resize", function (e: UIEvent) {
@@ -232,25 +232,25 @@ export const { $dom, render, watch, state } = (function () {
     return (...initial: any[]) =>
       initial.length ? cb(...initial) : cb(...oldArr);
   }
+  const reValDom = (vx: any, affect: boolean) => {
+    if (vx instanceof $dom && affect) {
+      vx.component = false;
+    } else if (Array.isArray(vx)) {
+      vx.forEach((vc) => {
+        reValDom(vc, affect);
+      });
+    }
+  };
   function state<T>(
     val: T,
     affectChildren = false,
   ): [() => T, (newValue: T) => void] {
-    const reValDom = (vx: any) => {
-      if (vx instanceof $dom && affectChildren) {
-        vx.component = false;
-      } else if (Array.isArray(vx)) {
-        vx.forEach((vc) => {
-          reValDom(vc);
-        });
-      }
-    };
-    reValDom(val);
+    reValDom(val, affectChildren);
     let ee: T = val;
     const getValue = (): T => ee;
     const setValue = (newValue: T): void => {
       if (ee === newValue) return;
-      reValDom(newValue);
+      reValDom(newValue, affectChildren);
       ee = newValue;
       trig("state", affectChildren);
     };
@@ -347,7 +347,7 @@ export const { $dom, render, watch, state } = (function () {
         } else if (typeof e == "object") {
           return JSON.stringify(e);
         } else {
-          return String(e);
+          return String(e == undefined ? "" : e);
         }
       })
       .join("");
@@ -483,6 +483,8 @@ export const { $dom, render, watch, state } = (function () {
   }
   return { $dom, render, watch, state };
 })();
+
+// Return div, class attributes of flex
 
 export function dom(
   name: string | ((attr: attr, ...ctx: ctx[]) => dom),
