@@ -5,8 +5,9 @@ export interface dict<T> {
 }
 type V = string | number | boolean;
 type S = string | string[] | ((e?: Element) => S);
-type MS = dict<(e?: Element) => S>;
 type fun<E, T> = (e?: E) => T;
+type fany = () => any;
+type WTC = [(...e: any) => void, fany, true?];
 type STYLE = V | ((e?: Element) => V);
 type CSSinT = {
   [P in keyof CSSStyleDeclaration]?: STYLE;
@@ -22,14 +23,19 @@ Edit and make other values either Array of V
 -------------------------
 */
 
-let XATT: dict<dict<MS> | MS> = {};
+type _MS = [(e?: Element) => S, any];
+type MS2 = dict<_MS>;
+let XATT2: dict<dict<MS2> | MS2> = {};
 
 export const { $dom, render, watch, state } = (function () {
   const WT: HTMLElement[] = [];
   const _DC = document;
-  const resizeF: dict<(e?: HTMLElement) => void> = {};
-  const unloadF: dict<(e?: HTMLElement) => void> = {};
-  const popstateF: dict<(e?: HTMLElement) => void> = {};
+
+  //
+  const _WatchSTATE: dict<HTMLElement[]> = {};
+  const _WinSTATE: dict<
+    dict<(e?: HTMLElement, t?: EventTarget | null) => void>
+  > = {};
 
   class idm {
     _c = 0;
@@ -48,66 +54,98 @@ export const { $dom, render, watch, state } = (function () {
     }
   }
 
-  function dom_trig(dx: $, yy: any): boolean {
-    if (typeof yy == "function") {
-      const dm = yy(dx.e) as any;
-      let mid = dx.id;
-      if (mid) {
-        let ndm = new idm(mid);
-        const [actx, fctx] = _CTX(dm, ndm);
-        if (dx.inner.trim() != actx) {
-          fctx &&
-            $$.O.keys(fctx).forEach((fc) => {
-              const xs = XATT[fc];
-              if (xs)
-                $$.O.keys(xs).forEach((fcc) => {
-                  delete XATT[fc][fcc];
-                });
-            });
-          dx.inner = actx;
-          $$.O.ass(XATT, fctx);
+  function dom_trig(k: string, x: string, dx: $, yy: any): boolean {
+    const [adm, _adm] = yy as _MS;
+    const dm = adm(dx.e) as any;
+    let mid = dx.id;
+    if (mid) {
+      let ndm = new idm(mid);
+      const [actx, fctx] = _CTX(dm, ndm);
+      if (_adm != actx) {
+        XATT2[k][x] = [adm, actx];
+        fctx &&
+          $$.O.keys(fctx).forEach((fc) => {
+            const xs = XATT2[fc];
+            const ws = _WinSTATE[fc];
+            const wt = _WatchSTATE[fc];
+            if (xs) {
+              delete XATT2[fc];
+            }
+            if (ws) {
+              delete _WinSTATE[fc];
+            }
+            if (wt) {
+              delete _WatchSTATE[fc];
+            }
+          });
 
-          return true;
-        }
+        dx.inner = actx;
+        $$.O.ass(XATT2, fctx);
+        return true;
       }
     }
     return false;
   }
-  function trig(by: string, affectChildren = false, noDom = true) {
-    if (XATT) {
-      $$.O.items(XATT).forEach(([k, v]) => {
+  //
+  function iniWinState(ky: string) {
+    if (!(ky in _WinSTATE)) {
+      _WinSTATE[ky] = {};
+    }
+  }
+  function iniWatchState(ky: string) {
+    if (!(ky in _WatchSTATE)) {
+      _WatchSTATE[ky] = [];
+    }
+  }
+
+  function trig2(by: string, affectChildren = false, noDom = true) {
+    if (XATT2) {
+      $$.O.items(XATT2).forEach(([k, v]) => {
         if ($$.O.keys(v).length) {
           const D = _DC.getElementById(k);
           if (D) {
             let dx = $(D);
             let domOnly = false;
-            if (noDom) {
-              domOnly = dom_trig(dx, v[affectChildren ? "dom" : "dom_ctx"]);
+            let mx = affectChildren ? "dom" : "dom_ctx";
+            if (noDom && v[mx]) {
+              domOnly = dom_trig(k, mx, dx, v[mx]);
             }
             if (domOnly) {
-              trig("doms", false, false);
+              trig2("doms", false, false);
             } else {
               $$.O.items(v).forEach(([x, y]) => {
                 if (x == "dom" || x == "dom_ctx") {
                 } else if (x == "ctx") {
-                  const cxt = y(D) as any;
-                  const [ic, _] = _CTX(cxt);
-                  if (dx.inner != ic) {
+                  const [cxt, _ctx] = y as _MS;
+                  const [ic, _] = _CTX(cxt(D));
+                  if (_ctx != ic) {
                     dx.inner = ic;
+                    XATT2[k][x] = [cxt, ic];
                   }
                 } else if (x == "on") {
-                  delete XATT[k]["on"];
+                  delete XATT2[k]["on"];
+
                   $$.O.items(y).forEach(([kk, vv]) => {
                     if (typeof vv == "function") {
                       let xvv = vv as (e?: HTMLElement | undefined) => void;
                       if (kk == "ready") {
                         vv(D);
-                      } else if (kk == "resize") {
-                        resizeF[k] = xvv;
-                      } else if (kk == "unload") {
-                        unloadF[k] = xvv;
-                      } else if (kk == "popstate") {
-                        popstateF[k] = xvv;
+                      } else if (
+                        ["resize", "unload", "popstate"].includes(kk)
+                      ) {
+                        iniWinState(k);
+                        _WinSTATE[k][kk] = xvv;
+                      } else if (kk == "watch") {
+                        const vvd = vv(D) as WTC | WTC[];
+                        if (vvd.length) {
+                          iniWatchState(k);
+                          let fvvd = Array.isArray(vvd[0]) ? vvd : [vvd];
+                          fvvd.forEach((_vv) => {
+                            const [cb, args, trig] = _vv as WTC;
+
+                            _WatchSTATE[k].push(watch2(cb, args, trig));
+                          });
+                        }
                       } else {
                         dx.on(kk as any, xvv);
                       }
@@ -116,75 +154,81 @@ export const { $dom, render, watch, state } = (function () {
                 } else if (x == "style") {
                   const _stl: dict<V> = {};
                   $$.O.items(y).forEach(([kk, vv]) => {
-                    if (typeof vv == "function") {
-                      const nval = vv(D);
-                      const dxt = dx.style.get(kk);
-                      if (nval != dxt) {
-                        _stl[kk] = vv(D);
-                      }
+                    const [nval, _nval] = vv as _MS;
+                    const sval = nval(D) as any;
+                    if (sval != _nval) {
+                      _stl[kk] = sval;
+                      $$.O.ass(XATT2[k][x], { [kk]: [nval, sval] });
                     }
                   });
                   $$.O.keys(_stl).length && dx.style.set(_stl);
                 } else {
-                  let yd = y(D);
-                  if (Array.isArray(yd)) {
-                    yd = yd.filter((y) => y != "").join(" ");
+                  let [xy, _xy] = y as _MS;
+                  let yxy = xy(D);
+                  if (Array.isArray(yxy)) {
+                    yxy = yxy.filter((y) => y != "").join(" ");
                   }
-                  if (dx.attr.get(x) != yd) {
-                    dx.attr.set({ [x]: yd });
+                  if (yxy != _xy) {
+                    dx.attr.set({ [x]: yxy });
+                    XATT2[k][x] = [xy, yxy];
                   }
                 }
               });
             }
           } else {
-            delete XATT[k];
+            delete XATT2[k];
           }
         } else {
-          delete XATT[k];
+          delete XATT2[k];
         }
       });
-
-      WT.forEach((c) => {
-        c.click();
-      });
     }
+
+    //
+    WT.forEach((c) => {
+      c.click();
+    });
+    $$.O.vals(_WatchSTATE).forEach((v) => {
+      v.forEach((vv) => vv.click());
+    });
   }
+
   function windowState() {
     window.addEventListener("resize", function (e: UIEvent) {
-      const targ = e.target;
-      $$.O.items(resizeF).forEach(([k, v]) => {
-        const D = _DC.getElementById(k);
-        let vv = v as any;
-        if (D) {
-          vv(D, targ);
-        } else {
-          delete resizeF[k];
+      $$.O.items(_WinSTATE).forEach(([wk, wv]) => {
+        if (wv.resize) {
+          const D = _DC.getElementById(wk);
+          if (D) {
+            wv.resize(D, e.target);
+          } else {
+            delete _WinSTATE[wk];
+          }
         }
       });
     });
     //   ------
     window.addEventListener("beforeunload", function (e: BeforeUnloadEvent) {
-      const targ = e.target;
-      $$.O.items(unloadF).forEach(([k, v]) => {
-        const D = _DC.getElementById(k);
-        let vv = v as any;
-        if (D) {
-          vv(D, targ);
-        } else {
-          delete unloadF[k];
+      $$.O.items(_WinSTATE).forEach(([wk, wv]) => {
+        if (wv.unload) {
+          const D = _DC.getElementById(wk);
+          if (D) {
+            wv.unload(D, e.target);
+          } else {
+            delete _WinSTATE[wk];
+          }
         }
       });
     });
 
     window.addEventListener("popstate", function (e: PopStateEvent) {
-      const targ = e.target;
-      $$.O.items(popstateF).forEach(([k, v]) => {
-        const D = _DC.getElementById(k);
-        let vv = v as any;
-        if (D) {
-          vv(D, targ);
-        } else {
-          delete popstateF[k];
+      $$.O.items(_WinSTATE).forEach(([wk, wv]) => {
+        if (wv.popstate) {
+          const D = _DC.getElementById(wk);
+          if (D) {
+            wv.popstate(D, e.target);
+          } else {
+            delete _WinSTATE[wk];
+          }
         }
       });
     });
@@ -203,6 +247,17 @@ export const { $dom, render, watch, state } = (function () {
       }
     });
   }
+
+  function remapF(v: fun<any, any>) {
+    let kv = v();
+    if (kv && $$.O.has(kv, "value")) {
+      return kv.value;
+    } else {
+      return kv;
+    }
+  }
+
+  // I need to add ID system ?
   function watch<T>(
     callback: (...e: any[]) => any,
     ...valsToWatch: Array<fun<any, any>>
@@ -232,6 +287,31 @@ export const { $dom, render, watch, state } = (function () {
     return (...initial: any[]) =>
       initial.length ? cb(...initial) : cb(...oldArr);
   }
+
+  function watch2<T>(
+    callback: (...e: any[]) => any,
+    valToWatch: fun<any, any>,
+    trigger?: boolean,
+  ) {
+    let XF = $$.new({ dom: "span" });
+    let CB: [fun<any, void>, any] = [callback, remapF(valToWatch)];
+    XF.onclick = function (e) {
+      const [cb, oldF] = CB;
+      let oldn = remapF(valToWatch);
+      let hasChanged = !(oldn == oldF);
+      if (hasChanged) {
+        cb(oldn);
+        CB = [cb, oldn];
+      }
+    };
+
+    if (trigger) {
+      const [cb, oldF] = CB;
+      cb(oldF);
+    }
+    return XF;
+  }
+
   const reValDom = (vx: any, affect: boolean) => {
     if (vx instanceof $dom && affect) {
       vx.component = false;
@@ -241,6 +321,7 @@ export const { $dom, render, watch, state } = (function () {
       });
     }
   };
+
   function state<T>(
     val: T,
     affectChildren = false,
@@ -252,7 +333,8 @@ export const { $dom, render, watch, state } = (function () {
       if (ee === newValue) return;
       reValDom(newValue, affectChildren);
       ee = newValue;
-      trig("state", affectChildren);
+
+      trig2("state", affectChildren);
     };
     return [getValue, setValue];
   }
@@ -295,14 +377,14 @@ export const { $dom, render, watch, state } = (function () {
     key: string,
     val: any,
     style = false,
-  ): [dict<string>, MS | dict<MS> | null] {
+  ): [dict<string>, MS2 | dict<MS2> | null] {
     const vtype = typeof val,
       isarr = Array.isArray(val),
-      fatt: MS | dict<MS> = {};
+      fatt: MS2 | dict<MS2> = {};
     if (vtype == "function") {
       const vt = val();
       const [atd, _] = _ATTR(key, vt);
-      $$.O.ass(fatt, { [key]: val });
+      $$.O.ass(fatt, { [key]: [val, atd] });
       return [atd, fatt];
     } else if (!isarr && vtype == "object") {
       if (style) {
@@ -313,7 +395,8 @@ export const { $dom, render, watch, state } = (function () {
             if (typeof vv == "function") {
               if (!("style" in fatt)) fatt["style"] = {};
               _vv = vv();
-              $$.O.ass(fatt["style"], { [xss]: vv });
+              //
+              $$.O.ass(fatt["style"], { [xss]: [vv, _vv] });
             }
             return `${xss}:${_vv}`;
           })
@@ -326,15 +409,21 @@ export const { $dom, render, watch, state } = (function () {
       let kk = {
         [key]: _val
           .map((s) => {
-            return typeof s == "boolean" ? (s ? "" : "false") : String(s);
+            return s != undefined
+              ? typeof s == "boolean"
+                ? s
+                  ? ""
+                  : "false"
+                : String(s)
+              : "";
           })
           .join(" "),
       };
       return [kk, null];
     }
   }
-  function _CTX(val: any, pid: idm = new idm()): [string, MS | null, boolean] {
-    const fatt: MS = {};
+  function _CTX(val: any, pid: idm = new idm()): [string, MS2 | null, boolean] {
+    const fatt: MS2 = {};
     let _xval = Array.isArray(val) ? val.flat() : [val];
     let component = true;
     const KV = _xval
@@ -356,8 +445,8 @@ export const { $dom, render, watch, state } = (function () {
 
   // ---
   class render {
-    app: (data?: any) => dom | dom[];
-    constructor(app: (data?: any) => dom | dom[]) {
+    app: (data?: any) => dom;
+    constructor(app: (data?: any) => dom) {
       this.app = app;
     }
     dom(data = {}) {
@@ -368,31 +457,30 @@ export const { $dom, render, watch, state } = (function () {
       const XDM = Array.isArray(TA) ? TA : [TA];
       XDM.reverse().forEach((ts) => {
         const its = ts.__(_id);
-        $$.O.ass(XATT, its.attr);
+        $$.O.ass(XATT2, its.attr);
         _XRT.appendfirst = its.ctx;
       });
       _XRT.appendfirst = noscrp;
 
-      trig("render");
+      trig2("render");
       windowState();
     }
   }
-
   class $dom {
     name: string;
-    _attr: attr;
+    _attr: attr | null;
     _ctx: ctx[];
     component: boolean;
-    constructor(name: string, attr: attr, ...ctx: ctx[]) {
+    constructor(name: string, attr: attr | null, ctx: ctx[]) {
       this.name = name;
       this._attr = attr;
       this._ctx = ctx;
       this.component = true;
     }
-    __(pid: idm = new idm()): { ctx: string; attr: dict<dict<MS> | MS> } {
+    __(pid: idm = new idm()): { ctx: string; attr: dict<dict<MS2> | MS2> } {
       let xid = pid.mid;
-      const f_fatt: dict<dict<MS> | MS> = {};
-      const dom_fun: dict<MS> | MS = {};
+      const f_fatt: dict<dict<MS2> | MS2> = {};
+      const dom_fun: dict<MS2> | MS2 = {};
       const attr_dct: dict<string> = {};
       const _ctx: string[] = [];
       if (this._attr) {
@@ -410,11 +498,12 @@ export const { $dom, render, watch, state } = (function () {
       }
       //
 
-      const _reCTX = (vl: DV | DV[], _pid: idm) => {
+      const _reCTX = (vl: DV | DV[], _pid: idm): [boolean, string] => {
         const [actx, fctx, isco] = _CTX(vl, _pid);
         _ctx.push(actx);
         $$.O.ass(f_fatt, fctx);
-        return isco;
+
+        return [isco, actx];
       };
 
       const x_len = this._ctx.length;
@@ -428,15 +517,16 @@ export const { $dom, render, watch, state } = (function () {
             xid = ndx.mid;
             //
             if (vt instanceof $dom) {
-              const dtype = _reCTX(vt, ndx) ? "dom_ctx" : "dom";
-              $$.O.ass(dom_fun, { [dtype]: ct });
+              const [isD, dctx] = _reCTX(vt, ndx);
+              const dtype = isD ? "dom_ctx" : "dom";
+              $$.O.ass(dom_fun, { [dtype]: [ct, dctx] });
             } else {
               const [actx, fctx, isco] = _CTX(vt, ndx);
               if (fctx && $$.O.keys(fctx).length) {
                 const dtype = isco ? "dom_ctx" : "dom";
-                $$.O.ass(dom_fun, { [dtype]: ct });
+                $$.O.ass(dom_fun, { [dtype]: [ct, actx] });
               } else {
-                $$.O.ass(dom_fun, { ctx: ct });
+                $$.O.ass(dom_fun, { ctx: [ct, actx] });
               }
               _ctx.push(actx);
               $$.O.ass(f_fatt, fctx);
@@ -487,24 +577,24 @@ export const { $dom, render, watch, state } = (function () {
 // Return div, class attributes of flex
 
 export function dom(
-  name: string | ((attr: attr, ...ctx: ctx[]) => dom),
-  attr: attr,
+  name: string | ((attr: attr, ctx: ctx[]) => dom),
+  attr: attr | null,
   ...ctx: ctx[]
 ): dom {
   if (typeof name == "function") {
-    let __: any = ctx;
+    let __: any = ctx.flat();
     if (attr && "__" in attr) {
       __ = attr.__;
       delete attr.__;
     }
-    return name(__ ? { ...attr, __ } : __, ...ctx);
+    return name(__ ? { ...attr, __ } : __, ctx.flat());
   } else {
-    return new $dom(name, attr, ...ctx);
+    return new $dom(name, attr, ctx.flat());
   }
 }
 
-export function frag(r: any, ...d: ctx[]) {
-  return d;
+export function frag(r: any, d: ctx[]) {
+  return d.flat();
 }
 
 /*
@@ -534,6 +624,10 @@ export const { $, _$, $$, $E, eventStream } = (function () {
         has: Object.hasOwn,
         ass: Object.assign,
       };
+    }
+
+    static objlen(a: object | null) {
+      return a ? this.O.keys(a).length : 0;
     }
 
     static makeID(length: number) {
@@ -749,7 +843,7 @@ export const { $, _$, $$, $E, eventStream } = (function () {
       //
       if (val instanceof $dom) {
         const vl = val.__();
-        $$.O.ass(XATT, vl.attr);
+        $$.O.ass(XATT2, vl.attr);
         this.e.insertAdjacentHTML("beforeend", vl.ctx);
       } else {
         this.e.insertAdjacentHTML("beforeend", val);
@@ -758,7 +852,7 @@ export const { $, _$, $$, $E, eventStream } = (function () {
     set appendfirst(val: any) {
       if (val instanceof $dom) {
         const vl = val.__();
-        $$.O.ass(XATT, vl.attr);
+        $$.O.ass(XATT2, vl.attr);
         this.e.insertAdjacentHTML("afterbegin", vl.ctx);
       } else {
         this.e.insertAdjacentHTML("afterbegin", val);
@@ -823,7 +917,7 @@ export const { $, _$, $$, $E, eventStream } = (function () {
     set inner(val: any) {
       if (val instanceof $dom) {
         const vl = val.__();
-        $$.O.ass(XATT, vl.attr);
+        $$.O.ass(XATT2, vl.attr);
         this.e.innerHTML = vl.ctx;
       } else {
         this.e.innerHTML = val;
@@ -1332,8 +1426,8 @@ export const { local, session } = (function () {
   return { local, session };
 })();
 
+const rgx = new RegExp(/\/\/(.*?\w.*?$)/);
 export const { loadCSS, For, preload } = (function () {
-  const rgx = new RegExp(/\/\/(.*?\w.*?$)/);
   function metaURL(meta: string, url: string) {
     let _url = url;
     if (meta) {
@@ -1373,8 +1467,8 @@ export const { loadCSS, For, preload } = (function () {
     return false;
   }
 
-  function loadCSS(importmeta: string, url: string) {
-    let _url = metaURL(importmeta, url);
+  function loadCSS(importmetaurl: string, url: string) {
+    let _url = metaURL(importmetaurl, url);
     if (isCSS(_url)) return;
 
     const style = document.createElement("link");
@@ -1385,6 +1479,7 @@ export const { loadCSS, For, preload } = (function () {
       as: "style",
       href: _url,
     });
+
     document.head.appendChild(style);
   }
 
@@ -1433,3 +1528,271 @@ export const { loadCSS, For, preload } = (function () {
 
   return { loadCSS, For, preload };
 })();
+
+export class __ {
+  static _class(x: attr, cl: any[]) {
+    const _cl: any[] = cl;
+    if (x?.class) {
+      _cl.push(...(Array.isArray(x.class) ? x.class : [x.class]));
+    }
+    return _cl;
+  }
+  static _str(str: any, ret: dom) {
+    return str && typeof str == "string" ? ret : str;
+  }
+  static _attr(x: attr, ...xclude: string[]) {
+    return $$.O.items(x).reduce<any>((dc, [k, v]) => {
+      if (!xclude.includes(k)) dc[k] = v;
+      return dc;
+    }, {});
+  }
+  static _meta(meta: string, url: string) {
+    let _url = url;
+    if (meta) {
+      const rgd = rgx.exec(meta);
+      if (rgd?.length == 2) {
+        let slicer = 0;
+        if (url.startsWith("..")) {
+          url.split("/").forEach((fu) => {
+            if (fu == "..") {
+              slicer += 1;
+            }
+          });
+          const rgp = url.split("/").slice(slicer).join("/");
+          const drx = rgd[1].split("/").slice(1, -1);
+          const rgt = drx.slice(0, drx.length - slicer).join("/");
+          _url = "./" + rgt + "/" + rgp;
+          // -----
+        } else if (url.startsWith(".")) {
+          const rgp = url.split("/").slice(1).join("/");
+          const rgy = rgd[1].split("/").slice(1, -1).join("/");
+
+          _url = "/" + rgy + "/" + rgp;
+        }
+      }
+    }
+
+    return _url;
+  }
+
+  static _parseURL(url: string) {
+    const parsed: string[] = [];
+    const wcard: string[] = [];
+    let murl = url;
+    let qurl = "";
+    const splitd = url.match(/(?<=\?)[^/].*=?(?=\/|$)/g);
+
+    if (splitd?.[0]) {
+      qurl = splitd?.[0];
+      murl = url.slice(0, url.indexOf(qurl) - 1);
+    }
+    const prsed = murl.match(/(?<=\/)[^/].*?(?=\/|$)/g) ?? ["/"];
+    const query: any = {};
+
+    prsed?.forEach((pr) => {
+      if (pr.indexOf("<") >= 0) {
+        const tgp = pr.match(/(?<=<)[^/].*?(?=>|$)/g);
+        if (tgp?.length) {
+          const tgz: string = tgp[0];
+          if (tgz.indexOf(":") > -1) {
+            const [_type, _wcard] = tgz.split(":");
+            parsed.push(_type);
+            wcard.push(_wcard);
+          } else {
+            parsed.push(tgz);
+          }
+        }
+      } else {
+        parsed.push(pr);
+      }
+    });
+
+    if (url.slice(-1) == "/" && url.length > 1) {
+      parsed.push("/");
+    }
+
+    if (qurl) {
+      const _qq = decodeURIComponent(qurl);
+      const _qstr = _qq.split("&");
+      _qstr.forEach((qs) => {
+        const [ak, av] = qs.split(/\=(.*)/, 2);
+        query[ak] = av;
+      });
+    }
+
+    return { parsed, wcard, query };
+  }
+  static is_number(value: any) {
+    return !isNaN(parseFloat(value)) && isFinite(value);
+  }
+  static _type(wrd: any, isFinal: boolean = false) {
+    let lit_type: [any, string] | [] = [];
+    if (this.is_number(wrd)) {
+      const nm = Number(wrd);
+      lit_type = [nm, "number"];
+    } else {
+      if (isFinal && wrd.indexOf(".") >= 1) {
+        lit_type = [wrd, "file"];
+      } else {
+        let tps = "-";
+        if (wrd.length == 36) {
+          const dashy = wrd.match(/\-/g);
+          if (dashy && dashy.length == 4) {
+            tps = "uuid";
+          } else {
+            tps = "string";
+          }
+        } else if (wrd != "/") {
+          tps = "string";
+        }
+        lit_type = [wrd, tps];
+      }
+    }
+    return lit_type;
+  }
+}
+
+interface view {
+  title: string;
+  js: string;
+  sT?: number;
+}
+
+/**
+ *
+ * string | number | uuid
+ *
+ * /url/\<string>
+ *
+ * /url/\<string:*hell> value contains the substring "hello"
+ *
+ * /url/\<string:^hell> value begins with "hello"
+ *
+ * /url/\<string:$hell> value ends with "hello"
+ */
+export class router {
+  WURL: string[];
+  map: dict<view>;
+  page: () => dom;
+  _page: (dm: dom) => void;
+  pushState = false;
+  constructor(map: dict<view>, r: { pushState?: boolean } = {}) {
+    [this.page, this._page] = state<dom>(dom("div", null, "??"), true);
+    this.WURL = [];
+    this.map = map;
+    const wc = ["string", "number", "uuid"];
+    $$.O.keys(map).forEach((mp) => {
+      const { parsed, wcard } = __._parseURL(mp);
+      if (wcard.length) {
+        this.WURL.push(mp);
+      } else {
+        for (let i = 0; i < parsed.length; i++) {
+          if (wc.includes(parsed[i])) {
+            this.WURL.push(mp);
+            break;
+          }
+        }
+      }
+    });
+    this.pushState = r.pushState ?? false;
+  }
+  get(url: string, eh?: HTMLElement) {
+    if (url in this.map) {
+      this.__import(url, this.map[url], eh);
+    } else {
+      const wnv = this.__wc(url);
+      if (wnv && wnv in this.map) {
+        this.__import(url, this.map[wnv], eh, true);
+      }
+    }
+  }
+  __wc(url: string) {
+    const WURL = this.WURL;
+    const { parsed } = __._parseURL(url);
+    let smatch = "";
+    let wcmatchd = "";
+    let upcount = 0;
+    //
+    let wcrdCnt = 0;
+    parsed.forEach((mk, ind) => {
+      for (let i = 0; i < WURL.length; i++) {
+        const { parsed: pr, wcard } = __._parseURL(WURL[i]);
+        if (pr.length == parsed.length && wcard.length) {
+          if (mk == pr[ind]) {
+            wcmatchd = WURL[i];
+            upcount++;
+            break;
+          } else if (wcard[wcrdCnt]) {
+            const wc = wcard[wcrdCnt];
+            wcrdCnt++;
+            const st = wc[0];
+            const wrd = wc.slice(1);
+            if (st == "*" && mk.indexOf(wrd) > -1) {
+              wcmatchd = WURL[i];
+              upcount++;
+              break;
+            } else if (st == "^" && mk.startsWith(wrd)) {
+              wcmatchd = WURL[i];
+              upcount++;
+              break;
+            } else if (st == "&" && mk.endsWith(wrd)) {
+              wcmatchd = WURL[i];
+              upcount++;
+              break;
+            }
+          } else {
+            const TP = __._type(mk);
+            if (pr[ind] == TP[1]) {
+              wcmatchd = WURL[i];
+              upcount++;
+              break;
+            }
+          }
+        }
+      }
+    });
+
+    if (!wcmatchd || upcount != parsed.length) {
+      parsed.forEach((mk, ind) => {
+        for (let i = 0; i < WURL.length; i++) {
+          const { parsed: pr } = __._parseURL(WURL[i]);
+          if (pr.length == parsed.length) {
+            if (mk == pr[ind]) {
+              smatch = WURL[i];
+              break;
+            } else {
+              const TP = __._type(mk);
+              if (pr[ind] == TP[1]) {
+                smatch = WURL[i];
+                break;
+              }
+            }
+          }
+        }
+      });
+    }
+
+    return upcount == parsed.length ? wcmatchd : smatch;
+  }
+  __import(nip: string, np: view, eh?: HTMLElement, iswc = false) {
+    import(np.js)
+      .then((e) => {
+        if ("default" in e) {
+          this._page(dom(e.default, null));
+          document.title = np.title;
+          const cURL = window.location.pathname;
+          if (cURL !== nip) {
+            this.pushState && history.pushState({}, np.title, nip);
+          }
+          !iswc && eh && eh.scrollTo({ top: np.sT, behavior: "instant" });
+        } else {
+          this._page(dom("div", null, "error: js has no export default."));
+        }
+      })
+      .catch((e) => {
+        this._page(dom("div", null, "Page not found..."));
+      });
+  }
+}
+
+new router({});

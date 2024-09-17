@@ -4,13 +4,16 @@ interface dict<T> {
 type V = string | number | boolean;
 type S = V | V[] | ((e: Element) => S);
 
-type eventFunction = (e: UIEvent & MouseEvent) => void;
+type eventFunction = (e: any) => void;
 type _events = {
   [P in keyof GlobalEventHandlersEventMap]?: eventFunction;
 };
 type CE = (f: HTMLElement, e: Window) => void;
+type fany = () => any;
+type WTC = [(...e: any) => void, fany, true?];
 interface c_events {
   ready?: (f: HTMLElement) => void;
+  watch?: (f: HTMLElement) => WTC | WTC[];
   resize?: CE;
   unload?: CE;
   popstate?: CE;
@@ -31,10 +34,12 @@ interface Battr {
   on?: events;
 }
 type attr = dict<S> | Battr;
-type MS = dict<(e?: Element) => S>;
+type MS2 = dict<[(e?: Element) => S, any]>;
+
 interface dom {
   component: boolean;
-  __: (e: idm) => { ctx: string; attr: dict<dict<MS> | MS> };
+  name: string;
+  __: (e: idm) => { ctx: string; attr: dict<dict<MS2> | MS2> };
 }
 
 /*
