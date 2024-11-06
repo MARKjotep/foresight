@@ -8,14 +8,19 @@
     "strict": true,
     "lib": ["ESNext", "DOM"],
     "noImplicitThis": false,
-    "outDir": "../../app",
-    "composite": true,
+    "outDir": "../",
     "jsx": "react",
     "jsxFactory": "dom",
+    "jsxFragmentFactory": "frag",
     "rootDir": "./",
     "skipLibCheck": true,
     "baseUrl": "./",
-    "removeComments": true
+    "removeComments": true,
+    "composite": false,
+    "declaration": false,
+    "allowSyntheticDefaultImports": true,
+    "esModuleInterop": true,
+    "experimentalDecorators": true
   },
   "exclude": ["./**/_css", "./_css"]
 }

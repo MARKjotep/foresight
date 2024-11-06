@@ -235,6 +235,7 @@ export const { $dom, render, watch, state } = (function () {
 
     // Maintain the scrollPosition in session
   }
+
   function remap(arr: Array<fun<any, any>>) {
     return arr.map((v) => {
       if (typeof v == "function") {
@@ -372,7 +373,6 @@ export const { $dom, render, watch, state } = (function () {
       ].indexOf(tag) > -1
     );
   };
-
   function _ATTR(
     key: string,
     val: any,
@@ -623,13 +623,12 @@ export const { $, _$, $$, $E, eventStream } = (function () {
         items: Object.entries,
         has: Object.hasOwn,
         ass: Object.assign,
+        len: (obj = {}) => Object.keys(obj).length,
       };
     }
-
     static objlen(a: object | null) {
       return a ? this.O.keys(a).length : 0;
     }
-
     static makeID(length: number) {
       let result = "";
       const characters = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
@@ -653,6 +652,7 @@ export const { $, _$, $$, $E, eventStream } = (function () {
       const SD = new (Z as any)();
       return SD.x();
     }
+
     static new({
       dom,
       id,
@@ -865,6 +865,7 @@ export const { $, _$, $$, $E, eventStream } = (function () {
       this.e.click();
       return this;
     }
+
     get focus() {
       this.e.focus();
       return this;
@@ -914,6 +915,7 @@ export const { $, _$, $$, $E, eventStream } = (function () {
     get id() {
       return this.e.id;
     }
+
     set inner(val: any) {
       if (val instanceof $dom) {
         const vl = val.__();
@@ -944,10 +946,10 @@ export const { $, _$, $$, $E, eventStream } = (function () {
       this.e.remove();
       return this;
     }
+
     get tag() {
       return this.e.tagName;
     }
-
     get value() {
       let tval = this.e as any;
       return tval.value ?? "";
@@ -1574,7 +1576,6 @@ export class __ {
 
     return _url;
   }
-
   static _parseURL(url: string) {
     const parsed: string[] = [];
     const wcard: string[] = [];
@@ -1671,7 +1672,7 @@ interface view {
  * /url/\<string:$hell> value ends with "hello"
  */
 export class router {
-  WURL: string[];
+  private WURL: string[];
   map: dict<view>;
   page: () => dom;
   _page: (dm: dom) => void;
@@ -1706,7 +1707,7 @@ export class router {
       }
     }
   }
-  __wc(url: string) {
+  private __wc(url: string) {
     const WURL = this.WURL;
     const { parsed } = __._parseURL(url);
     let smatch = "";
@@ -1774,7 +1775,7 @@ export class router {
 
     return upcount == parsed.length ? wcmatchd : smatch;
   }
-  __import(nip: string, np: view, eh?: HTMLElement, iswc = false) {
+  private __import(nip: string, np: view, eh?: HTMLElement, iswc = false) {
     import(np.js)
       .then((e) => {
         if ("default" in e) {
@@ -1794,5 +1795,3 @@ export class router {
       });
   }
 }
-
-new router({});
